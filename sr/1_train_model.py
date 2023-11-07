@@ -163,6 +163,7 @@ if __name__ == "__main__":
     scheduler = optim.lr_scheduler.LambdaLR(opt_G, lr_lambda=lf)
 
     # Load saved params
+    logger.info("Loading saved params")
     if opt.startIter > 0:
         lm = torch.load(
             os.path.join(opt.expDir, 'Model_{:06d}.pth'.format(opt.startIter)))
@@ -172,9 +173,11 @@ if __name__ == "__main__":
         opt_G.load_state_dict(lm.state_dict())
 
     # Training dataset
+    logger.info("Loading training data")
     train_iter = Provider(opt.batchSize, opt.workerNum, opt.scale, opt.trainDir, opt.cropSize)
 
     # Valid dataset
+    logger.info("Loading valid data")
     valid = SRBenchmark(opt.valDir, scale=opt.scale)
 
     l_accum = [0., 0., 0.]
@@ -185,6 +188,7 @@ if __name__ == "__main__":
     # TRAINING
     i = opt.startIter
 
+    logger.info("Start taining...")
     for i in range(opt.startIter + 1, opt.totalIter + 1):
         model_G.train()
         # valid_steps(model_G, valid, opt, i)

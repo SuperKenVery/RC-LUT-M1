@@ -146,7 +146,7 @@ class BaseOptions():
         # self.print_options(opt)
 
         if opt.isTrain and opt.debug:
-            opt.displayStep = 10
+            opt.displayStep = 1
             opt.saveStep = 100
             opt.valStep = 50
             opt.totalIter = 200
@@ -172,14 +172,14 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--startIter', type=int, default=0,
                             help='Set 0 for from scratch, else will load saved params and trains further')
         parser.add_argument('--totalIter', type=int, default=200000, help='Total number of training iterations')
-        parser.add_argument('--displayStep', type=int, default=100, help='display info every N iteration')
+        parser.add_argument('--displayStep', type=int, default=1, help='display info every N iteration')
         parser.add_argument('--valStep', type=int, default=2000, help='validate every N iteration')
         parser.add_argument('--saveStep', type=int, default=2000, help='save models every N iteration')
         parser.add_argument('--lr0', type=float, default=1e-3)
         parser.add_argument('--lr1', type=float, default=1e-4)
         parser.add_argument('--weightDecay', type=float, default=0)
         parser.add_argument('--gpuNum', '-g', type=int, default=1)
-        parser.add_argument('--workerNum', '-n', type=int, default=8)
+        parser.add_argument('--workerNum', '-n', type=int, default=1)
 
         self.isTrain = True
         return parser

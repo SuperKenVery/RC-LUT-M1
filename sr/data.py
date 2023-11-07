@@ -35,7 +35,8 @@ class Provider(object):
         if self.data_iter is None:
             self.build()
         try:
-            batch = self.data_iter.next()
+            # batch = self.data_iter.next()
+            batch = next(self.data_iter)
             self.iteration += 1
             if self.is_cuda:
                 batch[0] = batch[0].cuda()
@@ -153,10 +154,10 @@ class SRBenchmark(Dataset):
                 self.ims[key] = im_hr
                 if dataset == 'Set5' or dataset == 'Set14':
                     im_lr = np.array(Image.open(
-                    os.path.join(path, dataset, 'LR_bicubic/X%d' % scale, files[i])))  # [:-4] + 'x%d.png'%scale)))
+                    os.path.join(path, dataset, 'LR_bicubic/X%d' % scale, files[i][:-4]+'x%d.png'%scale)))  # [:-4] + 'x%d.png'%scale)))
                 else:
                     im_lr = np.array(Image.open(
-                    os.path.join(path, dataset, 'LR_bicubic', files[i])))
+                    os.path.join(path, dataset, 'LR_bicubic/X%d' % scale, files[i][:-4]+'x%d.png'%scale)))
                 if len(im_lr.shape) == 2:
                     im_lr = np.expand_dims(im_lr, axis=2)
 
