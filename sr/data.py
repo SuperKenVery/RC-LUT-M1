@@ -17,7 +17,7 @@ class Provider(object):
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-        self.is_cuda = True
+        self.is_cuda = False
         self.data_iter = None
         self.iteration = 0
         self.epoch = 1

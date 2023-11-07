@@ -92,7 +92,7 @@ def valid_steps(model_G, valid, opt, iter):
 
                 input_im = input_im.astype(np.float32) / 255.0
                 im = torch.Tensor(np.expand_dims(
-                    np.transpose(input_im, [2, 0, 1]), axis=0)).cuda()
+                    np.transpose(input_im, [2, 0, 1]), axis=0))
 
                 pred = mulut_predict(model_G, im, 'valid', opt)
                 # pred = (pred1 + pred2 + pred3) / 3
@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
     # Tensorboard for monitoring
     writer = SummaryWriter(log_dir=opt.expDir)
-    torch.cuda.set_device(opt.local_rank)
+    # torch.cuda.set_device(opt.local_rank)
 
     logger_name = 'train'
     logger_info(logger_name, os.path.join(opt.expDir, logger_name + '.log'))
@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     model = getattr(model, opt.model)
     # local_rank = torch.distributed.get_rank()
-    model_G = model(nf=opt.nf, scale=opt.scale, modes=modes, stages=stages).cuda()
+    model_G = model(nf=opt.nf, scale=opt.scale, modes=modes, stages=stages)
 
     # model_G = torch.nn.parallel.DistributedDataParallel(model_G,
     #                                                   device_ids=[opt.local_rank])
@@ -191,8 +191,8 @@ if __name__ == "__main__":
         # Data preparing
         st = time.time()
         im, lb = train_iter.next()
-        im = im.cuda()
-        lb = lb.cuda()
+        im = im
+        lb = lb
         dT += time.time() - st
 
         # TRAIN G
