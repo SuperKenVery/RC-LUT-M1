@@ -77,12 +77,8 @@ class RC_Module(nn.Module):
         for i in range(self.mlp_field * self.mlp_field):
             module = getattr(self, 'out{}'.format(i+1))
             x_list.append(module(x_kv[str(i+1)]))
-        # for i in range(self.mlp_field * self.mlp_field):
-        #     temp.append(x_kv[str(i+1)])
         out = torch.cat(x_list, dim=1)
-        # out = torch.cat(temp, dim=1)
         out = out.mean(1)
-        # out = self.out_layer(out)
         out = out.unsqueeze(-1).unsqueeze(-1)
 
         out = torch.tanh(out)

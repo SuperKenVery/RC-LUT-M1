@@ -254,7 +254,7 @@ class eltr:
         self.opt = opt
         self.lutDict = lutDict
 
-    def run(self, num_worker=24):
+    def run(self, num_worker=1):
         pool = Pool(num_worker)
         psnr_ssim_s = pool.map(self._worker, list(range(len(self.files))))
         print('Dataset {} | AVG LUT PSNR: {:.2f} SSIM: {:.4f}'.format(dataset, np.mean(np.asarray(psnr_ssim_s)[:, 0]),
