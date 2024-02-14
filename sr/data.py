@@ -1,6 +1,8 @@
 import os
 import random
 import sys
+import logging
+logger=logging.getLogger("load_data")
 
 import numpy as np
 from PIL import Image
@@ -74,16 +76,16 @@ class DIV2K(Dataset):
         self.hr_cache = os.path.join(path, "cache_hr.npy")
         if not os.path.exists(self.hr_cache):
             self.cache_hr()
-            print("HR image cache to:", self.hr_cache)
+            logger.info("HR image cache to:", self.hr_cache)
         self.hr_ims = np.load(self.hr_cache, allow_pickle=True).item()
-        print("HR image cache from:", self.hr_cache)
+        logger.info("HR image cache from:", self.hr_cache)
 
         self.lr_cache = os.path.join(path, "cache_lr_x{}.npy".format(self.scale))
         if not os.path.exists(self.lr_cache):
             self.cache_lr()
-            print("LR image cache to:", self.lr_cache)
+            logger.info("LR image cache to:", self.lr_cache)
         self.lr_ims = np.load(self.lr_cache, allow_pickle=True).item()
-        print("LR image cache from:", self.lr_cache)
+        logger.info("LR image cache from:", self.lr_cache)
 
     def cache_lr(self):
         lr_dict = dict()

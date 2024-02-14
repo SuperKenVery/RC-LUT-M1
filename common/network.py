@@ -33,28 +33,6 @@ class Conv(nn.Module):
 
     def forward(self, x):
         return self.conv(x)
-class Conv_test(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, dilation=1, bias=True):
-        super(Conv_test, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size,
-                              stride=stride, padding=padding, dilation=dilation, bias=bias)
-        self.conv2 = nn.Conv2d(out_channels, in_channels, 1,
-                              stride=stride, padding=padding, dilation=dilation, bias=bias)
-        self.conv3 = nn.Conv2d(in_channels, out_channels, 1,
-                              stride=stride, padding=padding, dilation=dilation, bias=bias)
-        nn.init.kaiming_normal_(self.conv1.weight)
-        nn.init.kaiming_normal_(self.conv2.weight)
-        nn.init.kaiming_normal_(self.conv3.weight)
-        if bias:
-            nn.init.constant_(self.conv1.bias, 0)
-            nn.init.constant_(self.conv2.bias, 0)
-            nn.init.constant_(self.conv3.bias, 0)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        return x
 
 class RC_Module(nn.Module):
     def __init__(self, in_channels, out_channels, out_dim, kernel_size=4, stride=1, padding=0, dilation=1, bias=True, mlp_field=7):
@@ -136,7 +114,6 @@ class MuLUTUnit(nn.Module):
             else:
                 self.conv1 = RC_Module(1, nf, 1, mlp_field=5)
             self.s_conv = Conv(4, nf, 1)
-            # self.conv1 = Conv_test(1, nf)
         elif mode == '2x2d':
             # self.conv1 = Conv(1, nf, 2, dilation=2)
             if self.stage == 1:
@@ -237,20 +214,6 @@ class MuLUTUnit(nn.Module):
             x = self.pixel_shuffle(x)
         # print(x.size())
         return x
-
-
-## cheap 1 conv 3->1,
-class MuLUTcUnit(nn.Module):
-    """ Channel-wise MuLUT block [RGB(3D) to RGB(3D)]. """
-
-    def __init__(self, mode, nf):
-        super(MuLUTcUnit, self).__init__()
-        self.act = nn.ReLU()
-        self.conv1 = Conv(3, 3, 1)
-        self.conv2 = Conv(3, 1, 1)
-
-    def forward(self, x):
-        return self.conv2(self.act(self.conv1(x)))
 
 class DeformConv2d(nn.Module):
     def __init__(self, inc, outc, kernel_size=3, padding=0, stride=1, modulation=False, mode='s'):
@@ -589,96 +552,4 @@ class SRNet(nn.Module):
             x = F.fold(x, ((H - self.P) * self.S, (W - self.P) * self.S),
                     self.S, stride=self.S)
             # print('ll', x.size())
-        return x
-
-
-############### Grayscale Denoising, Deblocking, Color Image Denosing ###############
-class DNNet(nn.Module):
-    """ Wrapper of basic MuLUT block without upsampling. """
-
-    def __init__(self, mode, nf=64, dense=True):
-        super(DNNet, self).__init__()
-        self.mode = mode
-
-        self.S = 1
-        if mode == 'Sx1':
-            self.model = MuLUTUnit('2x2', nf, dense=dense)
-            self.K = 2
-        elif mode == 'Dx1':
-            self.model = MuLUTUnit('2x2d', nf, dense=dense)
-            self.K = 3
-        elif mode == 'Yx1':
-            self.model = MuLUTUnit('1x4', nf, dense=dense)
-            self.K = 3
-        else:
-            raise AttributeError
-        self.P = self.K - 1
-
-    def forward(self, x):
-        B, C, H, W = x.shape
-        x = F.unfold(x, self.K)  # B,C*K*K,L
-        x = x.view(B, C, self.K * self.K, (H - self.P) * (W - self.P))  # B,C,K*K,L
-        x = x.permute((0, 1, 3, 2))  # B,C,L,K*K
-        x = x.reshape(B * C * (H - self.P) * (W - self.P),
-                      self.K, self.K)  # B*C*L,K,K
-        x = x.unsqueeze(1)  # B*C*L,l,K,K
-
-        if 'Y' in self.mode:
-            x = torch.cat([x[:, :, 0, 0], x[:, :, 1, 1],
-                           x[:, :, 1, 2], x[:, :, 2, 1]], dim=1)
-
-            x = x.unsqueeze(1).unsqueeze(1)
-
-        x = self.model(x)   # B*C*L,K,K
-        x = x.squeeze(1)
-        x = x.reshape(B, C, (H - self.P) * (W - self.P), -1)  # B,C,K*K,L
-        x = x.permute((0, 1, 3, 2))     # B,C,K*K,L
-        x = x.reshape(B, -1, (H - self.P) * (W - self.P))  # B,C*K*K,L
-        x = F.fold(x, ((H - self.P) * self.S, (W - self.P) * self.S),
-                   self.S, stride=self.S)
-        return x
-
-
-############### Image Demosaicking ###############
-class DMNet(nn.Module):
-    """ Wrapper of the first stage of MuLUT network for demosaicking. 4D(RGGB) bayer patter to (4*3)RGB"""
-
-    def __init__(self, mode, nf=64, dense=False):
-        super(DMNet, self).__init__()
-        self.mode = mode
-
-        if mode == 'SxN':
-            self.model = MuLUTUnit('2x2', nf, upscale=2, out_c=3, dense=dense)
-            self.K = 2
-            self.C = 3
-        else:
-            raise AttributeError
-        self.P = 0  # no need to add padding self.K - 1
-        self.S = 2  # upscale=2, stride=2
-
-    def forward(self, x):
-        B, C, H, W = x.shape
-        # bayer pattern, stride = 2
-        x = F.unfold(x, self.K, stride=2)  # B,C*K*K,L
-        x = x.view(B, C, self.K * self.K, (H // 2) * (W // 2))  # stride = 2
-        x = x.permute((0, 1, 3, 2))  # B,C,L,K*K
-        x = x.reshape(B * C * (H // 2) * (W // 2),
-                      self.K, self.K)  # B*C*L,K,K
-        x = x.unsqueeze(1)  # B*C*L,l,K,K
-
-        # print("in", torch.round(x[0, 0]*255))
-
-        if 'Y' in self.mode:
-            x = torch.cat([x[:, :, 0, 0], x[:, :, 1, 1],
-                           x[:, :, 1, 2], x[:, :, 2, 1]], dim=1)
-
-            x = x.unsqueeze(1).unsqueeze(1)
-
-        x = self.model(x)  # B*C*L,out_C,S,S
-        # self.C along with feat scale
-        x = x.reshape(B, C, (H // 2) * (W // 2), -1)  # B,C,L,out_C*S*S
-        x = x.permute((0, 1, 3, 2))  # B,C,outC*S*S,L
-        x = x.reshape(B, -1, (H // 2) * (W // 2))  # B,C*out_C*S*S,L
-        x = F.fold(x, ((H // 2) * self.S, (W // 2) * self.S),
-                   self.S, stride=self.S)
         return x

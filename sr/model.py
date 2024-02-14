@@ -11,14 +11,13 @@ from common.network import *
 
 mode_pad_dict = {"s": 1, "d": 2, "y": 2, "e": 3, "h": 3, "o": 3}
 
-
 class SRNets(nn.Module):
     """ A LUT-convertable SR network with configurable stages and patterns. """
 
     def __init__(self, nf=64, scale=4, modes=['s', 'd', 'y'], stages=2):
         super(SRNets, self).__init__()
 
-        
+
         for s in range(stages):  # 2-stage
             if (s + 1) == stages:
                 upscale = scale
