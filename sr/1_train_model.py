@@ -93,6 +93,8 @@ def valid_steps(model_G, valid, opt, iter):
                 input_im = input_im.astype(np.float32) / 255.0
                 im = torch.Tensor(np.expand_dims(
                     np.transpose(input_im, [2, 0, 1]), axis=0))
+                if torch.backends.mps.is_available():
+                    im = im.to("mps")
 
                 pred = mulut_predict(model_G, im, 'valid', opt)
                 # pred = (pred1 + pred2 + pred3) / 3
@@ -129,6 +131,12 @@ if __name__ == "__main__":
     # Tensorboard for monitoring
     writer = SummaryWriter(log_dir=opt.expDir)
     # torch.cuda.set_device(opt.local_rank)
+
+    if torch.backends.mps.is_available():
+        device=torch.device("mps")
+        torch.set_default_device(device)
+    else:
+        print("mps not available. Are you on M1?")
 
     logger_name = 'train'
     logger_info(logger_name, os.path.join(opt.expDir, logger_name + '.log'))

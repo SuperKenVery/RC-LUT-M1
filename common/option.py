@@ -174,7 +174,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--totalIter', type=int, default=200000, help='Total number of training iterations')
         parser.add_argument('--displayStep', type=int, default=1, help='display info every N iteration')
         parser.add_argument('--valStep', type=int, default=2000, help='validate every N iteration')
-        parser.add_argument('--saveStep', type=int, default=2000, help='save models every N iteration')
+        parser.add_argument('--saveStep', type=int, default=100, help='save models every N iteration')
         parser.add_argument('--lr0', type=float, default=1e-3)
         parser.add_argument('--lr1', type=float, default=1e-4)
         parser.add_argument('--weightDecay', type=float, default=0)

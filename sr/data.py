@@ -4,6 +4,7 @@ import sys
 
 import numpy as np
 from PIL import Image
+import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
@@ -41,6 +42,9 @@ class Provider(object):
             if self.is_cuda:
                 batch[0] = batch[0].cuda()
                 batch[1] = batch[1].cuda()
+            if torch.backends.mps.is_available():
+                batch[0] = batch[0].to("mps")
+                batch[1] = batch[1].to("mps")
             return batch[0], batch[1]
         except StopIteration:
             self.epoch += 1
@@ -50,6 +54,9 @@ class Provider(object):
             if self.is_cuda:
                 batch[0] = batch[0].cuda()
                 batch[1] = batch[1].cuda()
+            if torch.backends.mps.is_available():
+                batch[0] = batch[0].to("mps")
+                batch[1] = batch[1].to("mps")
             return batch[0], batch[1]
 
 
