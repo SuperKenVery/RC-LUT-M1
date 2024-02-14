@@ -49,7 +49,7 @@ class Conv_test(nn.Module):
             nn.init.constant_(self.conv1.bias, 0)
             nn.init.constant_(self.conv2.bias, 0)
             nn.init.constant_(self.conv3.bias, 0)
-            
+
     def forward(self, x):
         x = self.conv1(x)
         x = self.conv2(x)
@@ -60,15 +60,10 @@ class RC_Module(nn.Module):
     def __init__(self, in_channels, out_channels, out_dim, kernel_size=4, stride=1, padding=0, dilation=1, bias=True, mlp_field=7):
         super(RC_Module, self).__init__()
         self.mlp_field = mlp_field
-        self.conv = nn.Conv2d(in_channels, out_channels, 1,
-                              stride=stride, padding=padding, dilation=dilation, bias=bias)
-        self.out_layer = nn.Linear(out_channels, in_channels)
-        nn.init.kaiming_normal_(self.conv.weight)
-        nn.init.constant_(self.conv.bias, 0)
         for i in range(mlp_field * mlp_field):
             setattr(self, 'linear{}'.format(i+1), nn.Linear(in_channels, out_channels))
             setattr(self, 'out{}'.format(i+1), nn.Linear(out_channels, out_dim))
-        
+
     def forward(self, x):
         x_kv = {}
         # print('x', x.size())
@@ -89,7 +84,7 @@ class RC_Module(nn.Module):
         out = out.mean(1)
         # out = self.out_layer(out)
         out = out.unsqueeze(-1).unsqueeze(-1)
-        
+
         out = torch.tanh(out)
         out = round_func(out * 127)
         bias, norm = 127, 255.0
@@ -139,7 +134,7 @@ class MuLUTUnit(nn.Module):
         self.stage = stage
 
         if mode == '2x2':
-            
+
             if self.stage == 1:
                 self.conv1 = RC_Module(1, nf, 4, mlp_field=5)
             else:
@@ -203,7 +198,7 @@ class MuLUTUnit(nn.Module):
                 x = x.reshape(B * C * H * W, 2, 2)
                 x = x.unsqueeze(1)
                 x = self.act(self.conv_naive(x))
-            
+
         elif self.mode == '2x2d':
             x = x_7x7
             x = torch.tanh(self.conv1(x))
@@ -248,7 +243,7 @@ class MuLUTUnit(nn.Module):
         return x
 
 
-## cheap 1 conv 3->1, 
+## cheap 1 conv 3->1,
 class MuLUTcUnit(nn.Module):
     """ Channel-wise MuLUT block [RGB(3D) to RGB(3D)]. """
 
@@ -353,7 +348,7 @@ class DeformConv2d(nn.Module):
             # print('y', p_n)
         else:
             raise AttributeError
-        
+
         p_0 = self._get_p_0(h, w, N, dtype)
         p = p_0 + p_n
         # print('p_n', p_n, 'p', p)
@@ -413,7 +408,7 @@ class DeformConv2d(nn.Module):
         q_rt = torch.cat([q_rb[..., :N], q_lt[..., N:]], dim=-1)
         # clip p
         p = torch.cat([torch.clamp(p[..., :N], 0, x.size(2)-1), torch.clamp(p[..., N:], 0, x.size(3)-1)], dim=-1)
-        
+
         # bilinear kernel (b, h, w, N)
         g_lt = (1 + (q_lt[..., :N].type_as(p) - p[..., :N])) * (1 + (q_lt[..., N:].type_as(p) - p[..., N:]))
         g_rb = (1 - (q_rb[..., :N].type_as(p) - p[..., :N])) * (1 - (q_rb[..., N:].type_as(p) - p[..., N:]))
@@ -437,7 +432,7 @@ class DeformConv2d(nn.Module):
             m = m.unsqueeze(dim=1)
             m = torch.cat([m for _ in range(x_offset.size(1))], dim=1)
             x_offset *= m
-        
+
         # x_origin = self._reshape_x_offset(x_origin, ks)
         x_offset = self._reshape_x_offset(x_offset, ks)
         out = self.conv(x_offset)
@@ -447,7 +442,7 @@ class DeformConv2d(nn.Module):
 
 ############### Image Super-Resolution ###############
 class SRNet(nn.Module):
-    """ Wrapper of a generalized (spatial-wise) MuLUT block. 
+    """ Wrapper of a generalized (spatial-wise) MuLUT block.
         By specifying the unfolding patch size and pixel indices,
         arbitrary sampling pattern can be implemented.
     """
@@ -455,7 +450,7 @@ class SRNet(nn.Module):
     def __init__(self, mode, nf=64, upscale=None, dense=True):
         super(SRNet, self).__init__()
         self.mode = mode
-        
+
         if 'x1' in mode:
             assert upscale is None
         if mode == 'Sx1':
@@ -549,11 +544,11 @@ class SRNet(nn.Module):
             x_dense = x[:, :, :-4, :-4]
             x_7x7 = F.pad(x, [2, 0, 2, 0], mode='replicate')
             B7, C7, H7, W7 = x_7x7.shape
-            x_7x7 = F.unfold(x_7x7, 7) 
+            x_7x7 = F.unfold(x_7x7, 7)
             x_3x3 = x[:, :, :-2, :-2]
             B3, C3, H3, W3 = x_3x3.shape
             x_3x3 = F.unfold(x_3x3, 3)
-            
+
             x_3x3 = x_3x3.view(B3, C3, 9, (H3-2)*(W3-2))
             x_3x3 = x_3x3.permute((0, 1, 3, 2))
             x_3x3 = x_3x3.reshape(B3 * C3 * (H3-2)*(W3-2), 3, 3)
