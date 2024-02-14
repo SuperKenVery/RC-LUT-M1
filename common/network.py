@@ -38,6 +38,12 @@ class RC_Module(nn.Module):
     def __init__(self, in_channels, out_channels, out_dim, kernel_size=4, stride=1, padding=0, dilation=1, bias=True, mlp_field=7):
         super(RC_Module, self).__init__()
         self.mlp_field = mlp_field
+
+        # Cannot remove, or loading model would throw errors
+        self.conv = nn.Conv2d(in_channels, out_channels, 1,
+                              stride=stride, padding=padding, dilation=dilation, bias=bias)
+        self.out_layer = nn.Linear(out_channels, in_channels)
+        # Sigh...
         for i in range(mlp_field * mlp_field):
             setattr(self, 'linear{}'.format(i+1), nn.Linear(in_channels, out_channels))
             setattr(self, 'out{}'.format(i+1), nn.Linear(out_channels, out_dim))

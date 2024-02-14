@@ -2,7 +2,6 @@ import os
 import random
 import sys
 import logging
-logger=logging.getLogger("load_data")
 
 import numpy as np
 from PIL import Image
@@ -25,6 +24,8 @@ class Provider(object):
         self.iteration = 0
         self.epoch = 1
 
+        self.logger=logging.getLogger("train")
+
     def __len__(self):
         return int(sys.maxsize)
 
@@ -36,11 +37,14 @@ class Provider(object):
 
     def next(self):
         if self.data_iter is None:
+            self.logger.debug("Provider: building data_iter")
             self.build()
+            self.logger.debug("Provider: data_iter built")
         try:
             # batch = self.data_iter.next()
             batch = next(self.data_iter)
             self.iteration += 1
+            # print("batch[0].device is",batch[0].device)
             if self.is_cuda:
                 batch[0] = batch[0].cuda()
                 batch[1] = batch[1].cuda()
@@ -63,8 +67,12 @@ class Provider(object):
 
 
 class DIV2K(Dataset):
+    """Only load image into memory when needed, and release as soon as possible. Saves memory.
+    """
     def __init__(self, scale, path, patch_size, rigid_aug=True):
         super(DIV2K, self).__init__()
+        logger=logging.getLogger("train")
+        self.logger=logger
         self.scale = scale
         self.sz = patch_size
         self.rigid_aug = rigid_aug
@@ -72,39 +80,13 @@ class DIV2K(Dataset):
         self.file_list = [str(i).zfill(4)
                           for i in range(1, 901)]  # use both train and valid
 
-        # need about 8GB shared memory "-v '--shm-size 8gb'" for docker container
-        self.hr_cache = os.path.join(path, "cache_hr.npy")
-        if not os.path.exists(self.hr_cache):
-            self.cache_hr()
-            logger.info("HR image cache to:", self.hr_cache)
-        self.hr_ims = np.load(self.hr_cache, allow_pickle=True).item()
-        logger.info("HR image cache from:", self.hr_cache)
-
-        self.lr_cache = os.path.join(path, "cache_lr_x{}.npy".format(self.scale))
-        if not os.path.exists(self.lr_cache):
-            self.cache_lr()
-            logger.info("LR image cache to:", self.lr_cache)
-        self.lr_ims = np.load(self.lr_cache, allow_pickle=True).item()
-        logger.info("LR image cache from:", self.lr_cache)
-
-    def cache_lr(self):
-        lr_dict = dict()
-        dataLR = os.path.join(self.path, "LR", "X{}".format(self.scale))
-        for f in self.file_list:
-            lr_dict[f] = np.array(Image.open(os.path.join(dataLR, f + "x{}.png".format(self.scale))))
-        np.save(self.lr_cache, lr_dict, allow_pickle=True)
-
-    def cache_hr(self):
-        hr_dict = dict()
-        dataHR = os.path.join(self.path, "HR")
-        for f in self.file_list:
-            hr_dict[f] = np.array(Image.open(os.path.join(dataHR, f + ".png")))
-        np.save(self.hr_cache, hr_dict, allow_pickle=True)
+        self.dataLR = os.path.join(self.path, "LR", "X{}".format(self.scale))
+        self.dataHR = os.path.join(self.path, "HR")
 
     def __getitem__(self, _dump):
         key = random.choice(self.file_list)
-        lb = self.hr_ims[key]
-        im = self.lr_ims[key]
+        lb = np.array(Image.open(os.path.join(self.dataHR, key + ".png")))
+        im = np.array(Image.open(os.path.join(self.dataLR, key + "x{}.png".format(self.scale))))
 
         shape = im.shape
         i = random.randint(0, shape[0] - self.sz)

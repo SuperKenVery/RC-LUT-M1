@@ -179,7 +179,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--lr1', type=float, default=1e-4)
         parser.add_argument('--weightDecay', type=float, default=0)
         parser.add_argument('--gpuNum', '-g', type=int, default=1)
-        parser.add_argument('--workerNum', '-n', type=int, default=1)
+        parser.add_argument('--workerNum', '-n', type=int, default=0)
 
         self.isTrain = True
         return parser

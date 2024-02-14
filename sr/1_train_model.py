@@ -171,8 +171,8 @@ if __name__ == "__main__":
     scheduler = optim.lr_scheduler.LambdaLR(opt_G, lr_lambda=lf)
 
     # Load saved params
-    logger.info("Loading saved params")
     if opt.startIter > 0:
+        logger.info(f"Loading saved params: iter={opt.startIter}")
         lm = torch.load(
             os.path.join(opt.expDir, 'Model_{:06d}.pth'.format(opt.startIter)))
         model_G.load_state_dict(lm.state_dict(), strict=True)
@@ -196,12 +196,14 @@ if __name__ == "__main__":
     # TRAINING
     i = opt.startIter
 
-    logger.info("Start taining...")
+    logger.info("Start training...")
     for i in range(opt.startIter + 1, opt.totalIter + 1):
+        logger.debug(f"Iter {i}: Start")
         model_G.train()
         # valid_steps(model_G, valid, opt, i)
         # Data preparing
         st = time.time()
+        logger.debug(f" Load data")
         im, lb = train_iter.next()
         im = im
         lb = lb
@@ -211,6 +213,7 @@ if __name__ == "__main__":
         st = time.time()
         opt_G.zero_grad()
 
+        logger.debug(f" Forward")
         pred = mulut_predict(model_G, im, 'train', opt)
 
         # loss1 = F.mse_loss(pred1, lb)
@@ -218,9 +221,12 @@ if __name__ == "__main__":
         # loss3 = F.mse_loss(pred3, lb)
         # loss_G = (loss1 + loss2 + loss3) / 3
         loss_G = F.mse_loss(pred, lb)
+        logger.debug(f" Backward")
         loss_G.backward()
         opt_G.step()
         scheduler.step()
+
+        logger.debug(f" Done")
 
         rT += time.time() - st
 
