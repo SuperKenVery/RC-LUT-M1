@@ -1,3 +1,14 @@
+# Advice: don't work on this project
+
+The [original RC-LUT repo](https://github.com/liuguandu/RC-LUT) had some [issues](https://github.com/liuguandu/RC-LUT/issues) that are not resolved yet. The author didn't answer to any of the questions. 
+
+AFAIK the network architecture defined in the code is very different from what they said in the paper. Besides, even if I run their code I couldn't reproduce the results in their paper. I encountered [this](https://github.com/liuguandu/RC-LUT/issues/2#issuecomment-1949619761) problem which haven't been solved yet. The are [claims](https://github.com/liuguandu/RC-LUT/issues/2#issuecomment-1920403890) that the correct code would be released soon, but the repo has been inactive for 8 months. The last commit was on Jul 17, 2023.
+
+I suspect if they actually wrote the code and got the results in their [paper](https://openaccess.thecvf.com/content/ICCV2023/papers/Liu_Reconstructed_Convolution_Module_Based_Look-Up_Tables_for_Efficient_Image_Super-Resolution_ICCV_2023_paper.pdf), or they just made up the numbers. 
+
+If, however, you decided to continue, the following is the original README:
+
+
 ## Reconstructed Convolution Module Based Look-Up Tables for Efficient Image Super-Resolution
 
 [Guandu Liu*], Yukang Ding, Mading Li, Ming Sun, Xing Wen and [Bin Wang#]
